@@ -1,0 +1,46 @@
+module cla_add #(
+    parameter W = 16
+) (
+    input  wire [W-1:0] a,
+    input  wire [W-1:0] b,
+    output wire [W-1:0] s
+);
+
+    localparam N = (W + 3) / 4;
+
+    wire [N:0] carry;
+    assign carry[0] = 1'b0;
+
+    genvar i;
+    generate
+        for (i = 0; i < N; i = i + 1) begin : CLA_BLOCK
+
+            localparam BASE = i * 4;
+            localparam BITS = (W - BASE >= 4)
+                              ? 4 : W - BASE;
+
+            wire [3:0] x_blk, y_blk;
+            wire [3:0] sum_blk;
+            wire cout_blk;
+
+            assign x_blk = {{(4-BITS){1'b0}},
+                            a[BASE +: BITS]};
+
+            assign y_blk = {{(4-BITS){1'b0}},
+                            b[BASE +: BITS]};
+
+            cla4 u_cla4 (
+                .x(x_blk),
+                .y(y_blk),
+                .cin(carry[i]),
+                .sum(sum_blk),
+                .cout(cout_blk)
+            );
+
+            assign s[BASE +: BITS] = sum_blk[BITS-1:0];
+            assign carry[i+1] = cout_blk;
+
+        end
+    endgenerate
+
+endmodule
